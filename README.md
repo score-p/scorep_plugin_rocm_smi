@@ -1,4 +1,4 @@
-# Score-P Intel PMT Plugin
+# Score-P AMD ROCm-smi Plugin
 
 This repository provides a Score-P plugin to access the sensors provided by the ROCm-smi interface of AMDGPUs.
 
