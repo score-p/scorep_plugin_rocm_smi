@@ -77,7 +77,7 @@ class rocm_smi_plugin
     public:
         rocm_smi_plugin()
         : measurement_interval_(
-              std::chrono::milliseconds(stoi(scorep::environment_variable::get("interval", "50")))),
+              std::chrono::milliseconds(stoi(scorep::environment_variable::get("INTERVAL", "50")))),
           measurement_thread_(measurement_interval_)
         {
             rsmi_init(0);
