@@ -69,11 +69,8 @@ class RocmSmiMeasurementThread
 
 using namespace scorep::plugin::policy;
 
-template <typename T, typename Policies>
-using rocm_smi_object_id = object_id<RocmSensor, T, Policies>;
-
 class rocm_smi_plugin
-: public scorep::plugin::base<rocm_smi_plugin, async, once, scorep_clock, rocm_smi_object_id>
+: public scorep::plugin::base<rocm_smi_plugin, async, per_topology, scorep_clock>
 {
     public:
         rocm_smi_plugin()
@@ -82,6 +79,45 @@ class rocm_smi_plugin
           measurement_thread_(measurement_interval_)
         {
             rsmi_init(0);
+
+            /* Build map from PCI BFD to device index */
+            uint32_t num_devices;
+            rsmi_num_monitor_devices(&num_devices);
+            for (int i = 0; i < num_devices; ++i)
+            {
+                uint64_t pci_id;
+                if (rsmi_status_t ret = rsmi_dev_pci_id_get(i, &pci_id);
+                    ret != RSMI_STATUS_SUCCESS)
+                {
+                    continue;
+                }
+
+                /* rocm_smi.h:
+                 *      BDFID = ((DOMAIN & 0xFFFFFFFF) << 32) | ((Partition & 0xF) << 28)
+                 *              | ((BUS & 0xFF) << 8) | ((DEVICE & 0x1F) <<3 )
+                 *              | (FUNCTION & 0x7)
+                 *
+                 *  \code{.unparsed}
+                 *  | Name         | Field   | KFD property       KFD -> PCIe ID (uint64_t)
+                 *  -------------- | ------- | ---------------- | ---------------------------- |
+                 *  | Domain       | [63:32] | "domain"         | (DOMAIN & 0xFFFFFFFF) << 32  |
+                 *  | Partition id | [31:28] | "location id"    | (LOCATION & 0xF0000000)      |
+                 *  | Reserved     | [27:16] | "location id"    | N/A                          |
+                 *  | Bus          | [15: 8] | "location id"    | (LOCATION & 0xFF00)          |
+                 *  | Device       | [ 7: 3] | "location id"    | (LOCATION & 0xF8)            |
+                 *  | Function     | [ 2: 0] | "location id"    | (LOCATION & 0x7)             |
+                 *  \endcode
+                 */
+                SCOREP_MetricTopologyNodeIdentifier bdfid;
+                bdfid.pci.domain = (pci_id >> 32) & 0xFFFFFFFF;
+                bdfid.pci.bus = (pci_id & 0xFF00) >> 8;
+                bdfid.pci.device = (pci_id & 0xF8) >> 3;
+                bdfid.pci.function = pci_id & 0x07;
+                device_by_pci_.emplace(bdfid.id, i);
+
+                logging::debug() << "Found ROCm device: " << i << " with PCI ID "
+                    << bdfid.pci.domain << ":" << (unsigned int)bdfid.pci.bus << "." << (unsigned int)bdfid.pci.device << "." << (unsigned int)bdfid.pci.function;
+            }
         }
 
         ~rocm_smi_plugin()
@@ -90,86 +126,98 @@ class rocm_smi_plugin
         }
 
         std::vector<scorep::plugin::metric_property>
-        get_metric_properties(const std::string& metric_name)
+        get_metric_properties(const std::string& metricPattern)
         {
-            std::set<RocmSensor> rocm_sensors;
-            uint32_t num_devices;
+            std::vector<scorep::plugin::metric_property> result;
+            auto sensors = RocmSensor::get_known_sensors();
 
-            std::regex sensor_regex("ID([^:]+)::(.+)");
-            std::smatch sensor_match;
-            if (std::regex_match(metric_name, sensor_match, sensor_regex))
+            for (const auto& [type, sensor] : sensors)
             {
-                logging::warn() << sensor_match[0];
-                if (sensor_match[1] == "*")
+                if (scorep::plugin::util::matcher(metricPattern)(sensor.name))
                 {
-                    auto type = RocmSensor::Type::INVALID;
-                    auto sensors = RocmSensor::get_known_sensors();
+                    result.push_back(
+                        scorep::plugin::metric_property(
+                            sensor.name,
+                            sensor.description,
+                            sensor.unit
+                        )
+                            .absolute_point()
+                            .value_double());
 
-                    for (const auto& [sensor_type, sensor] : sensors)
-                    {
-                        if (scorep::plugin::util::matcher(sensor_match[2])(sensor.name))
-                        {
-                            type = sensor_type;
-                            break;
-                        }
-                    }
-
-                    if (type == RocmSensor::Type::INVALID)
-                    {
-                        logging::warn() << "Invalid sensor: " << sensor_match[2] << ", ignored";
-                        return {};
-                    }
-
-                    rsmi_num_monitor_devices(&num_devices);
-                    for (int i = 0; i < num_devices; ++i)
-                    {
-                        rocm_sensors.emplace(i, type);
-                        measurement_thread_.add_sensor(RocmSensor(i, type));
-                    }
-                }
-                else
-                {
-                    logging::warn() << "Invalid AMDGPU id: " << sensor_match[1] << ", ignored";
+                    logging::debug() << "Declared sensor " << sensor.name;
                 }
             }
-            else
-            {
-                logging::warn() << "Invalid sensor: " << metric_name << ", ignored";
-            }
+            return result;
+        }
 
-            std::vector<scorep::plugin::metric_property> ret;
-            for (auto& sensor : rocm_sensors)
+        std::vector<scorep::plugin::measurement_point>
+        add_topology_metrics(const SCOREP_MetricTopologyNode* topologyRoot,
+                             const std::string& metricName)
+        {
+            /* Find sensor based on metricName */
+            const auto sensor_type = [metricName]()
             {
-                if (!sensor.supported())
+                for (const auto& [type, sensor] : RocmSensor::get_known_sensors())
                 {
-                    logging::warn() << "sensor \'" << sensor.name() << "\' not supported, ignoring";
-                    continue;
+                    if (metricName == sensor.name)
+                    {
+                        return type;
+                    }
                 }
-                ret.push_back(scorep::plugin::metric_property(sensor.name(), sensor.description(),
-                                                              sensor.unit())
-                                  .absolute_point()
-                                  .value_double());
-                make_handle(sensor.name(), sensor);
+                logging::warn() << "Invalid sensor: " << metricName << ", ignored";
+                throw std::exception();
+            }();
+
+            /* Collect all responsible GPU nodes */
+            std::vector<const SCOREP_MetricTopologyNode*> nodes;
+            SCOREP_MetricTopology_ForAllResponsiblePerDomain(
+                topologyRoot, SCOREP_METRIC_TOPOLOGY_NODE_DOMAIN_ACCELERATOR_DEVICE,
+                [](const SCOREP_MetricTopologyNode* node,
+                   void* cbArg)
+            {
+                auto* nodes = static_cast<std::vector<const SCOREP_MetricTopologyNode*>*>(cbArg);
+                nodes->emplace_back(node);
+            }, (void*)&nodes);
+
+            std::vector<scorep::plugin::measurement_point> results;
+            for (const auto* node : nodes)
+            {
+                if (const auto match = device_by_pci_.find(node->id);
+                    match != device_by_pci_.end())
+                {
+                    auto sensor = RocmSensor(match->second, sensor_type);
+                    if (!sensor.supported())
+                    {
+                        logging::warn() << "Metric " << metricName << " not supported on device " << match->second;
+                        continue;
+                    }
+
+                    logging::debug() << "Added sensor " << sensor.name() << " for device " << match->second;
+
+                    const auto metric_id = static_cast<int32_t>(sensors_.size());
+                    sensors_.emplace_back(sensor);
+                    results.emplace_back(metric_id, node);
+                }
             }
-            return ret;
+            return results;
         }
 
         template <typename C>
-        void get_all_values(RocmSensor& id, C& cursor)
+        void get_all_values(int32_t& id, C& cursor)
         {
-            std::vector<TVPair> values = measurement_thread_.get_values_for_sensor(id);
+            std::vector<TVPair> values = measurement_thread_.get_values_for_sensor(sensors_[id]);
             for (auto& value : values)
             {
                 cursor.write(value.first, value.second);
             }
         }
 
-        void add_metric(RocmSensor& id)
-        {
-        }
-
         void start()
         {
+            for (const auto& sensor : sensors_)
+            {
+                measurement_thread_.add_sensor(sensor);
+            }
             measurement_thread_.start();
         }
 
@@ -177,9 +225,16 @@ class rocm_smi_plugin
         {
             measurement_thread_.stop();
         }
+
+        void synchronize(bool, SCOREP_MetricSynchronizationMode)
+        {
+        }
+
     private:
         std::chrono::milliseconds measurement_interval_;
         RocmSmiMeasurementThread measurement_thread_;
+        std::vector<RocmSensor> sensors_;
+        std::map<uint64_t, uint32_t> device_by_pci_;
 };
 
 SCOREP_METRIC_PLUGIN_CLASS(rocm_smi_plugin, "rocm_smi");

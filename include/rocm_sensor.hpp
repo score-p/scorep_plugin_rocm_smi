@@ -90,7 +90,7 @@ public:
         if (auto sensors = get_known_sensors();
             sensors.count(type_) != 0)
         {
-            return std::string("ID") + std::to_string(device_index_) + "::" + sensors.at(type_).name;
+            return sensors.at(type_).name;
         }
         return {};
     }
