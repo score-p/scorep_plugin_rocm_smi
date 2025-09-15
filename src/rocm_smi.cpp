@@ -14,20 +14,20 @@ using TVPair = std::pair<scorep::chrono::ticks, double>;
 
 class RocmSmiMeasurementThread
 {
-	public:
-		RocmSmiMeasurementThread(std::chrono::milliseconds interval)
-			: interval_(interval)
-		{
-		}
+    public:
+        RocmSmiMeasurementThread(std::chrono::milliseconds interval)
+            : interval_(interval)
+        {
+        }
 
-		void add_sensor(RocmSensor sensor)
-		{
-			data_.emplace(sensor, std::vector<TVPair>());
-		}
-		void measurement()
-		{
-			while (!stop_)
-			{
+        void add_sensor(RocmSensor sensor)
+        {
+            data_.emplace(sensor, std::vector<TVPair>());
+        }
+        void measurement()
+        {
+            while (!stop_)
+            {
                 for (auto& sensor : data_)
                 {
                     std::lock_guard<std::mutex> lock(read_mutex_);
@@ -46,24 +46,24 @@ class RocmSmiMeasurementThread
             return ret;
         }
         void start()
-		{
-			thread_ = std::thread([this]() { this->measurement(); });
-		}
-		void stop()
-		{
-			stop_ = true;
+        {
+            thread_ = std::thread([this]() { this->measurement(); });
+        }
+        void stop()
+        {
+            stop_ = true;
 
-			if(thread_.joinable())
-			{
-				thread_.join();
-			}
-		}
-	private:
-		bool stop_ = false;
-		std::mutex read_mutex_;
-		std::chrono::milliseconds interval_;
-		std::map<RocmSensor, std::vector<TVPair>> data_;
-		std::thread thread_;
+            if(thread_.joinable())
+            {
+                thread_.join();
+            }
+        }
+    private:
+        bool stop_ = false;
+        std::mutex read_mutex_;
+        std::chrono::milliseconds interval_;
+        std::map<RocmSensor, std::vector<TVPair>> data_;
+        std::thread thread_;
 };
 
 using namespace scorep::plugin::policy;
@@ -74,18 +74,18 @@ using rocm_smi_object_id = object_id<RocmSensor, T, Policies>;
 class rocm_smi_plugin
 : public scorep::plugin::base<rocm_smi_plugin, async, once, scorep_clock, rocm_smi_object_id>
 {
-	public:
+    public:
         rocm_smi_plugin()
         : measurement_interval_(
               std::chrono::milliseconds(stoi(scorep::environment_variable::get("interval", "50")))),
           measurement_thread_(measurement_interval_)
         {
-			rsmi_init(0);
-		}
+            rsmi_init(0);
+        }
 
-		~rocm_smi_plugin()
-		{
-			rsmi_shut_down();
+        ~rocm_smi_plugin()
+        {
+            rsmi_shut_down();
         }
 
         std::vector<scorep::plugin::metric_property>
@@ -156,29 +156,29 @@ class rocm_smi_plugin
         template <typename C>
         void get_all_values(RocmSensor& id, C& cursor)
         {
-			std::vector<TVPair> values = measurement_thread_.get_values_for_sensor(id);
-			for (auto& value : values)
-			{
-				cursor.write(value.first, value.second);
-			}
+            std::vector<TVPair> values = measurement_thread_.get_values_for_sensor(id);
+            for (auto& value : values)
+            {
+                cursor.write(value.first, value.second);
+            }
         }
 
         void add_metric(RocmSensor& id)
         {
-		}
+        }
 
-		void start()
-		{
+        void start()
+        {
             measurement_thread_.start();
         }
 
-		void stop()
-		{
+        void stop()
+        {
             measurement_thread_.stop();
         }
-	private:
-		std::chrono::milliseconds measurement_interval_;
-		RocmSmiMeasurementThread measurement_thread_;
+    private:
+        std::chrono::milliseconds measurement_interval_;
+        RocmSmiMeasurementThread measurement_thread_;
 };
 
 SCOREP_METRIC_PLUGIN_CLASS(rocm_smi_plugin, "rocm_smi");
