@@ -101,7 +101,7 @@ class rocm_smi_plugin
                 logging::warn() << sensor_match[0];
                 if (sensor_match[1] == "*")
                 {
-                    RocmSensorType type = RocmSensorType::INVALID;
+                    auto type = RocmSensor::Type::INVALID;
                     auto sensors = RocmSensor::get_sensor_names();
 
                     for (auto sensor : sensors)
@@ -113,7 +113,7 @@ class rocm_smi_plugin
                         }
                     }
 
-                    if (type == RocmSensorType::INVALID)
+                    if (type == RocmSensor::Type::INVALID)
                     {
                         logging::warn() << "Invalid sensor: " << sensor_match[2] << ", ignored";
                         return {};
