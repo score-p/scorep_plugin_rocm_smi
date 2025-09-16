@@ -115,158 +115,168 @@ public:
         return {};
     }
 
-    bool supported() const
-    {
-        uint64_t val;
-        uint32_t val32;
-        float counter_resolution;
-        uint64_t timestamp;
-        rsmi_status_t ret;
-        switch (type_)
-        {
-        case Type::SOCKET_POWER:
-            ret = rsmi_dev_current_socket_power_get(device_index_, &val);
-            return (ret == RSMI_STATUS_SUCCESS);
-        case Type::AVERAGE_POWER:
-            ret = rsmi_dev_power_ave_get(device_index_, 0, &val);
-            return (ret == RSMI_STATUS_SUCCESS);
-        case Type::ENERGY_COUNT:
-            ret = rsmi_dev_energy_count_get(device_index_, &val, &counter_resolution, &timestamp);
-            return (ret == RSMI_STATUS_SUCCESS);
-        case Type::MEMORY_USAGE_VRAM:
-            ret = rsmi_dev_memory_usage_get(device_index_, RSMI_MEM_TYPE_VRAM, &val);
-            return (ret == RSMI_STATUS_SUCCESS);
-        case Type::MEMORY_USAGE_VIS_VRAM:
-            ret = rsmi_dev_memory_usage_get(device_index_, RSMI_MEM_TYPE_VIS_VRAM, &val);
-            return (ret == RSMI_STATUS_SUCCESS);
-        case Type::MEMORY_USAGE_GTT:
-            ret = rsmi_dev_memory_usage_get(device_index_, RSMI_MEM_TYPE_GTT, &val);
-            return (ret == RSMI_STATUS_SUCCESS);
-        case Type::MEMORY_BUSY:
-            ret = rsmi_dev_memory_busy_percent_get(device_index_, &val32);
-            return (ret == RSMI_STATUS_SUCCESS);
-        case Type::FAN_SPEED:
-            ret = rsmi_dev_fan_rpms_get(device_index_, 0, (int64_t*)&val);
-            return (ret == RSMI_STATUS_SUCCESS);
-        case Type::EDGE_TEMP_CURRENT:
-            ret = rsmi_dev_temp_metric_get(device_index_, RSMI_TEMP_TYPE_EDGE, RSMI_TEMP_CURRENT,
-                                           (int64_t*)&val);
-            return (ret == RSMI_STATUS_SUCCESS);
-        case Type::JUNCTION_TEMP_CURRENT:
-            ret = rsmi_dev_temp_metric_get(device_index_, RSMI_TEMP_TYPE_JUNCTION,
-                                           RSMI_TEMP_CURRENT, (int64_t*)&val);
-            return (ret == RSMI_STATUS_SUCCESS);
-        case Type::MEMORY_TEMP_CURRENT:
-            ret = rsmi_dev_temp_metric_get(device_index_, RSMI_TEMP_TYPE_MEMORY, RSMI_TEMP_CURRENT,
-                                           (int64_t*)&val);
-            return (ret == RSMI_STATUS_SUCCESS);
-        case Type::HBM_0_TEMP_CURRENT:
-            ret = rsmi_dev_temp_metric_get(device_index_, RSMI_TEMP_TYPE_HBM_0, RSMI_TEMP_CURRENT,
-                                           (int64_t*)&val);
-            return (ret == RSMI_STATUS_SUCCESS);
-        case Type::HBM_1_TEMP_CURRENT:
-            ret = rsmi_dev_temp_metric_get(device_index_, RSMI_TEMP_TYPE_HBM_1, RSMI_TEMP_CURRENT,
-                                           (int64_t*)&val);
-            return (ret == RSMI_STATUS_SUCCESS);
-        case Type::HBM_2_TEMP_CURRENT:
-            ret = rsmi_dev_temp_metric_get(device_index_, RSMI_TEMP_TYPE_HBM_2, RSMI_TEMP_CURRENT,
-                                           (int64_t*)&val);
-            return (ret == RSMI_STATUS_SUCCESS);
-        case Type::HBM_3_TEMP_CURRENT:
-            ret = rsmi_dev_temp_metric_get(device_index_, RSMI_TEMP_TYPE_HBM_3, RSMI_TEMP_CURRENT,
-                                           (int64_t*)&val);
-            return (ret == RSMI_STATUS_SUCCESS);
-        case Type::VDDGFX_VOLT_CURRENT:
-            ret = rsmi_dev_volt_metric_get(device_index_, RSMI_VOLT_TYPE_VDDGFX, RSMI_VOLT_CURRENT,
-                                           (int64_t*)&val);
-            return (ret == RSMI_STATUS_SUCCESS);
-        case Type::VDDGFX_VOLT_AVERAGE:
-            ret = rsmi_dev_volt_metric_get(device_index_, RSMI_VOLT_TYPE_VDDGFX, RSMI_VOLT_AVERAGE,
-                                           (int64_t*)&val);
-            return (ret == RSMI_STATUS_SUCCESS);
-        case Type::DEVICE_BUSY:
-            ret = rsmi_dev_busy_percent_get(device_index_, &val32);
-            return (ret == RSMI_STATUS_SUCCESS);
-        default:
-            return false;
-        }
-        return (ret == RSMI_STATUS_SUCCESS);
-    }
-
     double read() const
     {
-        uint64_t val;
+        uint64_t u64;
+        int64_t i64;
+        uint32_t u32;
         float counter_resolution;
         uint64_t timestamp;
-        uint32_t val32;
         rsmi_status_t ret;
         switch (type_)
         {
         case Type::SOCKET_POWER:
-            ret = rsmi_dev_current_socket_power_get(device_index_, &val);
-            return val * 0.000001;
+            ret = rsmi_dev_current_socket_power_get(device_index_, &u64);
+            if (ret == RSMI_STATUS_SUCCESS)
+            {
+                return u64 * 0.000001;
+            }
+            break;
         case Type::AVERAGE_POWER:
-            ret = rsmi_dev_power_ave_get(device_index_, 0, &val);
-            return val * 0.000001;
+            ret = rsmi_dev_power_ave_get(device_index_, 0, &u64);
+            if (ret == RSMI_STATUS_SUCCESS)
+            {
+                return u64 * 0.000001;
+            }
+            break;
         case Type::ENERGY_COUNT:
-            ret = rsmi_dev_energy_count_get(device_index_, &val, &counter_resolution, &timestamp);
-            return val * counter_resolution * 0.000001;
+            ret = rsmi_dev_energy_count_get(device_index_, &u64,
+                                            &counter_resolution, &timestamp);
+            if (ret == RSMI_STATUS_SUCCESS)
+            {
+                return u64 * counter_resolution * 0.000001;
+            }
+            break;
         case Type::MEMORY_USAGE_VRAM:
-            ret = rsmi_dev_memory_usage_get(device_index_, RSMI_MEM_TYPE_VRAM, &val);
-            return val;
+            ret = rsmi_dev_memory_usage_get(device_index_, RSMI_MEM_TYPE_VRAM, &u64);
+            if (ret == RSMI_STATUS_SUCCESS)
+            {
+                return u64;
+            }
+            break;
         case Type::MEMORY_USAGE_VIS_VRAM:
-            ret = rsmi_dev_memory_usage_get(device_index_, RSMI_MEM_TYPE_VIS_VRAM, &val);
-            return val;
+            ret = rsmi_dev_memory_usage_get(device_index_, RSMI_MEM_TYPE_VIS_VRAM, &u64);
+            if (ret == RSMI_STATUS_SUCCESS)
+            {
+                return u64;
+            }
+            break;
         case Type::MEMORY_USAGE_GTT:
-            ret = rsmi_dev_memory_usage_get(device_index_, RSMI_MEM_TYPE_GTT, &val);
-            return val;
+            ret = rsmi_dev_memory_usage_get(device_index_, RSMI_MEM_TYPE_GTT, &u64);
+            if (ret == RSMI_STATUS_SUCCESS)
+            {
+                return u64;
+            }
+            break;
         case Type::MEMORY_BUSY:
-            ret = rsmi_dev_memory_busy_percent_get(device_index_, &val32);
-            return val32;
+            ret = rsmi_dev_memory_busy_percent_get(device_index_, &u32);
+            if (ret == RSMI_STATUS_SUCCESS)
+            {
+                return u32;
+            }
+            break;
         case Type::FAN_SPEED:
-            ret = rsmi_dev_fan_rpms_get(device_index_, 0, (int64_t*)&val);
-            return val;
+            ret = rsmi_dev_fan_rpms_get(device_index_, 0, &i64);
+            if (ret == RSMI_STATUS_SUCCESS)
+            {
+                return i64;
+            }
+            break;
         case Type::EDGE_TEMP_CURRENT:
-            ret = rsmi_dev_temp_metric_get(device_index_, RSMI_TEMP_TYPE_EDGE, RSMI_TEMP_CURRENT,
-                                           (int64_t*)&val);
-            return val * 0.001;
+            ret = rsmi_dev_temp_metric_get(device_index_, RSMI_TEMP_TYPE_EDGE,
+                                           RSMI_TEMP_CURRENT, &i64);
+            if (ret == RSMI_STATUS_SUCCESS)
+            {
+                return i64 * 0.001;
+            }
+            break;
         case Type::JUNCTION_TEMP_CURRENT:
             ret = rsmi_dev_temp_metric_get(device_index_, RSMI_TEMP_TYPE_JUNCTION,
-                                           RSMI_TEMP_CURRENT, (int64_t*)&val);
-            return val * 0.001;
+                                           RSMI_TEMP_CURRENT, &i64);
+            if (ret == RSMI_STATUS_SUCCESS)
+            {
+                return i64 * 0.001;
+            }
+            break;
         case Type::MEMORY_TEMP_CURRENT:
-            ret = rsmi_dev_temp_metric_get(device_index_, RSMI_TEMP_TYPE_MEMORY, RSMI_TEMP_CURRENT,
-                                           (int64_t*)&val);
-            return val * 0.001;
+            ret = rsmi_dev_temp_metric_get(device_index_, RSMI_TEMP_TYPE_MEMORY,
+                                           RSMI_TEMP_CURRENT, &i64);
+            if (ret == RSMI_STATUS_SUCCESS)
+            {
+                return i64 * 0.001;
+            }
+            break;
         case Type::HBM_0_TEMP_CURRENT:
-            ret = rsmi_dev_temp_metric_get(device_index_, RSMI_TEMP_TYPE_HBM_0, RSMI_TEMP_CURRENT,
-                                           (int64_t*)&val);
-            return val * 0.001;
+            ret = rsmi_dev_temp_metric_get(device_index_, RSMI_TEMP_TYPE_HBM_0,
+                                           RSMI_TEMP_CURRENT, &i64);
+            if (ret == RSMI_STATUS_SUCCESS)
+            {
+                return i64 * 0.001;
+            }
+            break;
         case Type::HBM_1_TEMP_CURRENT:
-            ret = rsmi_dev_temp_metric_get(device_index_, RSMI_TEMP_TYPE_HBM_1, RSMI_TEMP_CURRENT,
-                                           (int64_t*)&val);
-            return val * 0.001;
+            ret = rsmi_dev_temp_metric_get(device_index_, RSMI_TEMP_TYPE_HBM_1,
+                                           RSMI_TEMP_CURRENT, &i64);
+            if (ret == RSMI_STATUS_SUCCESS)
+            {
+                return i64 * 0.001;
+            }
+            break;
         case Type::HBM_2_TEMP_CURRENT:
-            ret = rsmi_dev_temp_metric_get(device_index_, RSMI_TEMP_TYPE_HBM_2, RSMI_TEMP_CURRENT,
-                                           (int64_t*)&val);
-            return val * 0.001;
+            ret = rsmi_dev_temp_metric_get(device_index_, RSMI_TEMP_TYPE_HBM_2,
+                                           RSMI_TEMP_CURRENT, &i64);
+            if (ret == RSMI_STATUS_SUCCESS)
+            {
+                return i64 * 0.001;
+            }
+            break;
         case Type::HBM_3_TEMP_CURRENT:
-            ret = rsmi_dev_temp_metric_get(device_index_, RSMI_TEMP_TYPE_HBM_3, RSMI_TEMP_CURRENT,
-                                           (int64_t*)&val);
-            return val * 0.001;
+            ret = rsmi_dev_temp_metric_get(device_index_, RSMI_TEMP_TYPE_HBM_3,
+                                           RSMI_TEMP_CURRENT, &i64);
+            if (ret == RSMI_STATUS_SUCCESS)
+            {
+                return i64 * 0.001;
+            }
+            break;
         case Type::VDDGFX_VOLT_CURRENT:
-            ret = rsmi_dev_volt_metric_get(device_index_, RSMI_VOLT_TYPE_VDDGFX, RSMI_VOLT_CURRENT,
-                                           (int64_t*)&val);
-            return val * 0.001;
+            ret = rsmi_dev_volt_metric_get(device_index_, RSMI_VOLT_TYPE_VDDGFX,
+                                           RSMI_VOLT_CURRENT, &i64);
+            if (ret == RSMI_STATUS_SUCCESS)
+            {
+                return i64 * 0.001;
+            }
+            break;
         case Type::VDDGFX_VOLT_AVERAGE:
-            ret = rsmi_dev_volt_metric_get(device_index_, RSMI_VOLT_TYPE_VDDGFX, RSMI_VOLT_AVERAGE,
-                                           (int64_t*)&val);
-            return val * 0.001;
+            ret = rsmi_dev_volt_metric_get(device_index_, RSMI_VOLT_TYPE_VDDGFX,
+                                           RSMI_VOLT_AVERAGE, &i64);
+            if (ret == RSMI_STATUS_SUCCESS)
+            {
+                return i64 * 0.001;
+            }
+            break;
         case Type::DEVICE_BUSY:
-            ret = rsmi_dev_busy_percent_get(device_index_, &val32);
-            return val32;
-        default:
-            return 0.0;
+            ret = rsmi_dev_busy_percent_get(device_index_, &u32);
+            if (ret == RSMI_STATUS_SUCCESS)
+            {
+                return u32;
+            }
+            break;
+        }
+        const char* error_string;
+        rsmi_status_string(ret, &error_string);
+        throw std::runtime_error(std::string(error_string));
+    }
+
+    bool supported() const
+    {
+        try
+        {
+            read();
+            return true;
+        }
+        catch (std::runtime_error& e)
+        {
+            return false;
         }
     }
 
