@@ -102,13 +102,13 @@ class rocm_smi_plugin
                 if (sensor_match[1] == "*")
                 {
                     auto type = RocmSensor::Type::INVALID;
-                    auto sensors = RocmSensor::get_sensor_names();
+                    auto sensors = RocmSensor::get_known_sensors();
 
-                    for (auto sensor : sensors)
+                    for (const auto& [sensor_type, sensor] : sensors)
                     {
-                        if (sensor_match[2] == sensor.second)
+                        if (sensor_match[2] == sensor.name)
                         {
-                            type = sensor.first;
+                            type = sensor_type;
                             break;
                         }
                     }

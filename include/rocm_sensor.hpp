@@ -30,125 +30,89 @@ public:
         DEVICE_BUSY,
     };
 
+    struct Properties
+    {
+        std::string name;
+        std::string description;
+        std::string unit;
+    };
+
 public:
     RocmSensor(uint32_t device_index, Type type)
     : device_index_(device_index), type_(type)
     {
     }
 
-    static std::map<Type, std::string> get_sensor_names()
+    static std::map<Type, Properties> get_known_sensors()
     {
         return {
-            { Type::SOCKET_POWER, "socket_power" },
-            { Type::AVERAGE_POWER, "average_power" },
-            { Type::ENERGY_COUNT, "energy_count" },
-            { Type::MEMORY_USAGE_VRAM, "memory_usage_vram" },
-            { Type::MEMORY_USAGE_VIS_VRAM, "memory_usage_vis_vram" },
-            { Type::MEMORY_USAGE_GTT, "memory_usage_gtt" },
-            { Type::MEMORY_BUSY, "memory_busy" },
-            { Type::FAN_SPEED, "fan_speed" },
-            { Type::EDGE_TEMP_CURRENT, "edge_temp_current" },
-            { Type::JUNCTION_TEMP_CURRENT, "junction_temp_current" },
-            { Type::MEMORY_TEMP_CURRENT, "memory_temp_current" },
-            { Type::HBM_0_TEMP_CURRENT, "hbm0_temp_current" },
-            { Type::HBM_1_TEMP_CURRENT, "hbm1_temp_current" },
-            { Type::HBM_2_TEMP_CURRENT, "hbm2_temp_current" },
-            { Type::HBM_3_TEMP_CURRENT, "hbm3_temp_current" },
-            { Type::VDDGFX_VOLT_CURRENT, "vddgfx_volt_current" },
-            { Type::VDDGFX_VOLT_AVERAGE, "vddgfx_volt_average" },
-            { Type::DEVICE_BUSY, "device_busy" },
+            { Type::SOCKET_POWER,
+              { "socket_power", "Socket Power", "W" } },
+            { Type::AVERAGE_POWER,
+              { "average_power", "Average Power", "W"} },
+            { Type::ENERGY_COUNT,
+              { "energy_count", "Energy Count", "J"} },
+            { Type::MEMORY_USAGE_VRAM,
+              { "memory_usage_vram", "Memory Usage (VRAM)", "B"} }, // TODO: Real Unit
+            { Type::MEMORY_USAGE_VIS_VRAM,
+              { "memory_usage_vis_vram", "Memory Usage (Visible VRAM)", "B"} }, // TODO: Real Unit
+            { Type::MEMORY_USAGE_GTT,
+              { "memory_usage_gtt", "Memory Usage (GTT)", "B"} }, // TODO: Real Unit
+            { Type::MEMORY_BUSY,
+              { "memory_busy", "Memory Busy Percent", "%"} },
+            { Type::FAN_SPEED,
+              { "fan_speed", "Fan Speed", "rpm" } },
+            { Type::EDGE_TEMP_CURRENT,
+              { "edge_temp_current", "Current Edge GPU temperature", "°C" } },
+            { Type::JUNCTION_TEMP_CURRENT,
+              { "junction_temp_current", "Current junction/hotspot temperature", "°C" } },
+            { Type::MEMORY_TEMP_CURRENT,
+              { "memory_temp_current", "Current GPU memory temperature", "°C" } },
+            { Type::HBM_0_TEMP_CURRENT,
+              { "hbm0_temp_current", "Current HBM0 temperature", "°C" } },
+            { Type::HBM_1_TEMP_CURRENT,
+              { "hbm1_temp_current", "Current HBM1 temperature", "°C" } },
+            { Type::HBM_2_TEMP_CURRENT,
+              { "hbm2_temp_current", "Current HBM2 temperature", "°C" } },
+            { Type::HBM_3_TEMP_CURRENT,
+              { "hbm3_temp_current", "Current HBM3 temperature", "°C" } },
+            { Type::VDDGFX_VOLT_CURRENT,
+              { "vddgfx_volt_current", "Current Vdd_gfx voltage", "V" } },
+            { Type::VDDGFX_VOLT_AVERAGE,
+              { "vddgfx_volt_average", "Average Vdd_gfx voltage", "V" } },
+            { Type::DEVICE_BUSY,
+              { "device_busy", "Percentage of time device is busy", "%"} },
         };
     }
 
     std::string name() const
     {
-        std::string sensor = "";
-
-        auto sensors = get_sensor_names();
-        if (sensors.count(type_))
+        if (auto sensors = get_known_sensors();
+            sensors.count(type_) != 0)
         {
-            sensor = sensors.at(type_);
+            return std::string("ID") + std::to_string(device_index_) + "::" + sensors.at(type_).name;
         }
-        return std::string("ID") + std::to_string(device_index_) + "::" + sensor;
+        return {};
     }
 
     std::string description() const
     {
-        switch (type_)
+        if (auto sensors = get_known_sensors();
+            sensors.count(type_) != 0)
         {
-        case Type::SOCKET_POWER:
-            return "Socket Power";
-        case Type::AVERAGE_POWER:
-            return "Average Power";
-        case Type::ENERGY_COUNT:
-            return "Energy Count";
-        case Type::MEMORY_USAGE_VRAM:
-            return "Memory Usage (VRAM)";
-        case Type::MEMORY_USAGE_VIS_VRAM:
-            return "Memory Usage (Visible VRAM)";
-        case Type::MEMORY_USAGE_GTT:
-            return "Memory Usage (GTT)";
-        case Type::MEMORY_BUSY:
-            return "Memory Busy Percent";
-        case Type::FAN_SPEED:
-            return "Fan Speed";
-        case Type::EDGE_TEMP_CURRENT:
-            return "Current Edge GPU temperature";
-        case Type::JUNCTION_TEMP_CURRENT:
-            return "Current junction/hotspot temperature";
-        case Type::MEMORY_TEMP_CURRENT:
-            return "Current GPU memory temperature";
-        case Type::HBM_0_TEMP_CURRENT:
-            return "Current HBM0 temperature";
-        case Type::HBM_1_TEMP_CURRENT:
-            return "Current HBM1 temperature";
-        case Type::HBM_2_TEMP_CURRENT:
-            return "Current HBM2 temperature";
-        case Type::HBM_3_TEMP_CURRENT:
-            return "Current HBM3 temperature";
-        case Type::VDDGFX_VOLT_CURRENT:
-            return "Current Vdd_gfx voltage";
-        case Type::VDDGFX_VOLT_AVERAGE:
-            return "Average Vdd_gfx voltage";
-        case Type::DEVICE_BUSY:
-            return "Percentage of time device is busy";
+            return sensors.at(type_).description;
         }
-        return "unknown";
+        return {};
     }
 
     std::string unit() const
     {
-        switch (type_)
+        if (auto sensors = get_known_sensors();
+            sensors.count(type_) != 0)
         {
-        case Type::SOCKET_POWER:
-            return "W";
-        case Type::AVERAGE_POWER:
-            return "W";
-        case Type::ENERGY_COUNT:
-            return "J";
-        case Type::MEMORY_USAGE_VRAM:
-        case Type::MEMORY_USAGE_VIS_VRAM:
-        case Type::MEMORY_USAGE_GTT:
-            // TODO: Real Unit
-            return "B";
-        case Type::MEMORY_BUSY:
-        case Type::DEVICE_BUSY:
-            return "%";
-        case Type::FAN_SPEED:
-            return "rpm";
-        case Type::EDGE_TEMP_CURRENT:
-        case Type::JUNCTION_TEMP_CURRENT:
-        case Type::MEMORY_TEMP_CURRENT:
-        case Type::HBM_0_TEMP_CURRENT:
-        case Type::HBM_1_TEMP_CURRENT:
-        case Type::HBM_2_TEMP_CURRENT:
-        case Type::HBM_3_TEMP_CURRENT:
-            return "C";
-        case Type::VDDGFX_VOLT_CURRENT:
-        case Type::VDDGFX_VOLT_AVERAGE:
-            return "V";
+            return sensors.at(type_).unit;
         }
-        return "#";
+        return {};
     }
 
     bool supported() const
