@@ -72,7 +72,7 @@ template <typename T, typename Policies>
 using rocm_smi_object_id = object_id<RocmSensor, T, Policies>;
 
 class rocm_smi_plugin
-: public scorep::plugin::base<rocm_smi_plugin, async, once, scorep_clock, rocm_smi_object_id>
+: public scorep::plugin::base<rocm_smi_plugin, async, per_host, scorep_clock, rocm_smi_object_id>
 {
     public:
         rocm_smi_plugin()
