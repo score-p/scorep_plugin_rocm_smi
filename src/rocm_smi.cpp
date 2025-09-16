@@ -1,4 +1,5 @@
 #include <scorep/plugin/plugin.hpp>
+#include <scorep/plugin/util/matcher.hpp>
 
 #include <mutex>
 #include <regex>
@@ -106,7 +107,7 @@ class rocm_smi_plugin
 
                     for (const auto& [sensor_type, sensor] : sensors)
                     {
-                        if (sensor_match[2] == sensor.name)
+                        if (scorep::plugin::util::matcher(sensor_match[2])(sensor.name))
                         {
                             type = sensor_type;
                             break;
