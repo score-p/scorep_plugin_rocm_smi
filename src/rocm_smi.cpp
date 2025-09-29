@@ -135,14 +135,22 @@ class rocm_smi_plugin
             {
                 if (scorep::plugin::util::matcher(metricPattern)(sensor.name))
                 {
-                    result.push_back(
-                        scorep::plugin::metric_property(
-                            sensor.name,
-                            sensor.description,
-                            sensor.unit
-                        )
-                            .absolute_point()
-                            .value_double());
+                    auto property = scorep::plugin::metric_property(
+                        sensor.name,
+                        sensor.description,
+                        sensor.unit
+                    )
+                        .value_double();
+
+                    if (sensor.accumulated)
+                    {
+                        property.accumulated_point();
+                    }
+                    else
+                    {
+                        property.absolute_point();
+                    }
+                    result.emplace_back(property);
 
                     logging::debug() << "Declared sensor " << sensor.name;
                 }

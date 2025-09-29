@@ -35,6 +35,7 @@ public:
         std::string name;
         std::string description;
         std::string unit;
+        bool accumulated{false};
     };
 
 public:
@@ -51,7 +52,7 @@ public:
             { Type::AVERAGE_POWER,
               { "average_power", "Average Power", "W"} },
             { Type::ENERGY_COUNT,
-              { "energy_count", "Energy Count", "J"} },
+              { "energy_count", "Energy Count", "J", true} },
             { Type::MEMORY_USAGE_VRAM,
               { "memory_usage_vram", "Memory Usage (VRAM)", "B"} }, // TODO: Real Unit
             { Type::MEMORY_USAGE_VIS_VRAM,
