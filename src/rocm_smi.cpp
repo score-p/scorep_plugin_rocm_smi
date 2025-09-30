@@ -15,6 +15,12 @@ using TVPair = std::pair<scorep::chrono::ticks, double>;
 
 class RocmSmiMeasurementThread
 {
+    struct SensorReadings
+    {
+        std::vector<TVPair> readings;
+        double offset{0.0};
+    };
+
     public:
         RocmSmiMeasurementThread(std::chrono::milliseconds interval)
             : interval_(interval)
@@ -23,7 +29,11 @@ class RocmSmiMeasurementThread
 
         void add_sensor(RocmSensor sensor)
         {
-            data_.emplace(sensor, std::vector<TVPair>());
+            data_.emplace(sensor, SensorReadings{});
+            if (sensor.isAccumulated())
+            {
+                data_[sensor].offset = sensor.read();
+            }
         }
         void measurement()
         {
@@ -32,8 +42,8 @@ class RocmSmiMeasurementThread
                 for (auto& sensor : data_)
                 {
                     std::lock_guard<std::mutex> lock(read_mutex_);
-                    double value = sensor.first.read();
-                    sensor.second.emplace_back(scorep::chrono::measurement_clock::now(), value);
+                    double value = sensor.first.read() - sensor.second.offset;
+                    sensor.second.readings.emplace_back(scorep::chrono::measurement_clock::now(), value);
                 }
                 std::this_thread::sleep_for(interval_);
             }
@@ -42,8 +52,8 @@ class RocmSmiMeasurementThread
         std::vector<TVPair> get_values_for_sensor(RocmSensor sensor)
         {
             std::lock_guard<std::mutex> lock(read_mutex_);
-            auto ret = data_.at(sensor);
-            data_.at(sensor).clear();
+            std::vector<TVPair> ret;
+            std::swap(ret, data_.at(sensor).readings);
             return ret;
         }
         void start()
@@ -63,7 +73,7 @@ class RocmSmiMeasurementThread
         bool stop_ = false;
         std::mutex read_mutex_;
         std::chrono::milliseconds interval_;
-        std::map<RocmSensor, std::vector<TVPair>> data_;
+        std::map<RocmSensor, SensorReadings> data_;
         std::thread thread_;
 };
 

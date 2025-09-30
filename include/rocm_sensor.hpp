@@ -116,6 +116,16 @@ public:
         return {};
     }
 
+    bool isAccumulated() const
+    {
+        if (auto sensors = get_known_sensors();
+            sensors.count(type_) != 0)
+        {
+            return sensors.at(type_).accumulated;
+        }
+        return false;
+    }
+
     double read() const
     {
         uint64_t u64;
