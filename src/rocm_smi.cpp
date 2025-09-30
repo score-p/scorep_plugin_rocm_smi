@@ -33,8 +33,8 @@ class RocmSmiMeasurementThread
                     std::lock_guard<std::mutex> lock(read_mutex_);
                     double value = sensor.first.read();
                     sensor.second.emplace_back(scorep::chrono::measurement_clock::now(), value);
-                    std::this_thread::sleep_for(interval_);
                 }
+                std::this_thread::sleep_for(interval_);
             }
         }
 

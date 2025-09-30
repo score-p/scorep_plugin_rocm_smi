@@ -263,39 +263,39 @@ public:
         case RocmSensorType::EDGE_TEMP_CURRENT:
             ret = rsmi_dev_temp_metric_get(device_index_, RSMI_TEMP_TYPE_EDGE, RSMI_TEMP_CURRENT,
                                            (int64_t*)&val);
-            return val * 0.0001;
+            return val * 0.001;
         case RocmSensorType::JUNCTION_TEMP_CURRENT:
             ret = rsmi_dev_temp_metric_get(device_index_, RSMI_TEMP_TYPE_JUNCTION,
                                            RSMI_TEMP_CURRENT, (int64_t*)&val);
-            return val * 0.0001;
+            return val * 0.001;
         case RocmSensorType::MEMORY_TEMP_CURRENT:
             ret = rsmi_dev_temp_metric_get(device_index_, RSMI_TEMP_TYPE_MEMORY, RSMI_TEMP_CURRENT,
                                            (int64_t*)&val);
-            return val * 0.0001;
+            return val * 0.001;
         case RocmSensorType::HBM_0_TEMP_CURRENT:
             ret = rsmi_dev_temp_metric_get(device_index_, RSMI_TEMP_TYPE_HBM_0, RSMI_TEMP_CURRENT,
                                            (int64_t*)&val);
-            return val * 0.0001;
+            return val * 0.001;
         case RocmSensorType::HBM_1_TEMP_CURRENT:
             ret = rsmi_dev_temp_metric_get(device_index_, RSMI_TEMP_TYPE_HBM_1, RSMI_TEMP_CURRENT,
                                            (int64_t*)&val);
-            return val * 0.0001;
+            return val * 0.001;
         case RocmSensorType::HBM_2_TEMP_CURRENT:
             ret = rsmi_dev_temp_metric_get(device_index_, RSMI_TEMP_TYPE_HBM_2, RSMI_TEMP_CURRENT,
                                            (int64_t*)&val);
-            return val * 0.0001;
+            return val * 0.001;
         case RocmSensorType::HBM_3_TEMP_CURRENT:
             ret = rsmi_dev_temp_metric_get(device_index_, RSMI_TEMP_TYPE_HBM_3, RSMI_TEMP_CURRENT,
                                            (int64_t*)&val);
-            return val * 0.0001;
+            return val * 0.001;
         case RocmSensorType::VDDGFX_VOLT_CURRENT:
             ret = rsmi_dev_volt_metric_get(device_index_, RSMI_VOLT_TYPE_VDDGFX, RSMI_VOLT_CURRENT,
                                            (int64_t*)&val);
-            return val * 0.0001;
+            return val * 0.001;
         case RocmSensorType::VDDGFX_VOLT_AVERAGE:
             ret = rsmi_dev_volt_metric_get(device_index_, RSMI_VOLT_TYPE_VDDGFX, RSMI_VOLT_AVERAGE,
                                            (int64_t*)&val);
-            return val * 0.0001;
+            return val * 0.001;
         case RocmSensorType::DEVICE_BUSY:
             ret = rsmi_dev_busy_percent_get(device_index_, &val32);
             return val32;
