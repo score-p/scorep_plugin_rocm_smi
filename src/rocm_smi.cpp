@@ -37,9 +37,10 @@ class RocmSmiMeasurementThread
         }
         void measurement()
         {
+            auto interval = interval_;
             while (!stop_)
             {
-                auto until = std::chrono::steady_clock::now() + interval_;
+                auto until = std::chrono::steady_clock::now() + interval;
                 {
                     std::lock_guard<std::mutex> lock(read_mutex_);
                     for (auto& sensor : data_)
@@ -47,6 +48,11 @@ class RocmSmiMeasurementThread
                         double value = sensor.first.read() - sensor.second.offset;
                         sensor.second.readings.emplace_back(scorep::chrono::measurement_clock::now(), value);
                     }
+                }
+                while (until < std::chrono::steady_clock::now())
+                {
+                    until    += interval_;
+                    interval += interval_;
                 }
                 std::this_thread::sleep_until(until);
             }
