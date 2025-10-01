@@ -17,7 +17,8 @@ $ cmake -S . -B build
 $ cmake --build build
 ```
 
-Make the resulting `librocm_smi_plugin.so` availalbe via `LD_LIBRARY_PATH`.
+Make the resulting `librocm_smi_plugin.so` available via `LD_LIBRARY_PATH`. For
+Score-P its also possible to copy into the library path of the installation.
 
 ## Usage
 
@@ -26,7 +27,7 @@ $ export SCOREP_METRIC_PLUGINS=rocm_smi_plugin
 $ export SCOREP_METRIC_ROCM_SMI_PLUGIN="edge_temp_current"
 ```
 
-Sample interval is 50 ms by default and can be adjusted via
+Sample interval is 50 ms by default and can be adjusted via (here Score-P)
 
 ```console
 $ export SCOREP_METRIC_ROCM_SMI_PLUGIN_INTERVAL=100
@@ -38,5 +39,5 @@ Available and supported sensors for GPUs of the system can be retrieved with the
 ## Debug
 
 ```console
-$ export SCOREP_METRIC_ROCM_SMI_PLUGIN_VERBOSE=DEBUG
+$ export ROCM_SMI_PLUGIN_VERBOSE=DEBUG
 ```

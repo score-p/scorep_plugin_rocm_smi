@@ -89,12 +89,12 @@ class RocmSmiMeasurementThread
 using namespace scorep::plugin::policy;
 
 class rocm_smi_plugin
-: public scorep::plugin::base<rocm_smi_plugin, async, per_topology, scorep_clock>
+: public scorep::plugin::base<rocm_smi_plugin, config_vars, async, per_topology, scorep_clock>
 {
     public:
-        rocm_smi_plugin()
+        rocm_smi_plugin(std::map<std::string, std::string> configVars)
         : measurement_interval_(
-              std::chrono::milliseconds(stoi(scorep::environment_variable::get("INTERVAL", "50")))),
+              std::chrono::milliseconds(stoi(configVars.at("interval")))),
           measurement_thread_(measurement_interval_)
         {
             rsmi_init(0);
@@ -255,6 +255,12 @@ class rocm_smi_plugin
 
         void synchronize(bool, SCOREP_MetricSynchronizationMode)
         {
+        }
+
+    public:
+        static std::map<std::string, std::string> declare_config_vars()
+        {
+            return { { "interval", "50" } };
         }
 
     private:
