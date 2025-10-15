@@ -7,17 +7,17 @@ int main(void)
     rsmi_init(0);
     uint32_t num_devices;
     rsmi_num_monitor_devices(&num_devices);
-    auto sensors = RocmSensor::get_sensor_names();
+    auto sensors = RocmSensor::get_known_sensors();
 
     for (int i = 0; i < num_devices; ++i)
     {
         std::cout << "AMDGPU " << i << " supported sensors: " << std::endl;
-        for (auto sensor : sensors)
+        for (const auto& [type, sensor] : sensors)
         {
-            auto rocm_sensor = RocmSensor(i, sensor.first);
-            if (rocm_sensor.supported())
+            if (auto rocm_sensor = RocmSensor(i, type);
+                rocm_sensor.supported())
             {
-                std::cout << "\t" << rocm_sensor.name() << std::endl;
+                std::cout << "\t" << sensor.name << std::endl;
             }
         }
     }
